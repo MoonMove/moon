@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<head>
+    <title>Illinois DNR License Sales Site</title>
+    <meta http-equiv="Content-Type" content="text/phpl; charset=iso-8859-1">
+    <link href="ilhf.css" rel="stylesheet" type="text/css">
+    <script language="javascript" src="<?php echo $libs; ?>/general_functions.js"></script>
+  <script language="javascript" src="scripts/ilhf.js"></script>
+	<meta http-equiv="X-UA-Compatible" content="IE=8;FF=3;OtherUA=4" />
+</head>
+<body style="margin-top:<?= $margin ?>px; margin-left:<?= $margin ?>px;">
+<? if($app['site_type'] == 'PH' || $app['site_type'] == 'VPH') { ?>
+<div style="background-color: #EEEEEE; border-style: solid; padding: 2px; border-width: 1px; width: 40%;">
+	  USER ID: <?= $user_id ?> USER NAME: <?= $user_fn  ?> <?= $user_ln  ?>
+</div>
+<? } ?>
+<div align="<?= $page_align ?>">
