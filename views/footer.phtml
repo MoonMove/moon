@@ -1,0 +1,25 @@
+  <table width="<?= $page_width ?>"  border="0" cellspacing="0" cellpadding="1">
+		<tr>
+		  <td>
+		  <div align="center" class="footer">
+		  <hr class="hrule">
+	<? if(count($web_pos)) { ?>
+            If you are having problems with the Sale Transaction contact the Help Desk at 1-800-856-2143. <br>
+			Please have your location ID <span class="locationid"><?= $web_pos['location_id'] ?></span> ready so that we can assist you in a timely manner.
+	<? } else { ?>
+			<span class="locationid">!! Use of the back, forward, reload and refresh buttons is discouraged. !!<br>
+            !! Please use the buttons and links provided to move around this site. !!</span><br>
+			If you are experiencing difficulty using this application and need assistance,
+			email us at <a href="javascript: OpenEmail('<?= $user_fn . "%20" . "$user_ln" ?>', 'DT');">webmaster@test.com</a>.
+			If you need to purchase your license immediately please call phone sales at 1-800-805-6864. <br>
+			<span class="locationid">Note: This number is provided for the sale of licenses only, operators handling
+			these calls cannot assist you in your internet purchase.</span>
+	<? } ?>
+			</div>
+		   </td>
+	   </tr>
+	</table>
+   <div>
+<?=$global_google_analytics?>
+  </body>
+</html>
