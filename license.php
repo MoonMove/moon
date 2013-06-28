@@ -1,6 +1,6 @@
 <?
     //add AMS tokenization
-  require_once('../payment/AMS_client_class.php');
+    require_once('../payment/AMS_client_class.php');
     require_once("includes/inc.php");
 
     switch($_GET['action'])
