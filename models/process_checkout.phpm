@@ -1,0 +1,182 @@
+<?
+//encrypt data
+require_once("../util/tools.php");
+require_once("../util/functions/handlePaymentech.inc");
+require_once("../util/classes/dataValidator_class.php");
+ignore_user_abort(true);
+
+$index_page = $_REQUEST['action'];
+// allow multiple attempts when debugging
+if($_SESSION['viewnow'] != 1)
+{
+  if($cust["checkout_error"])
+	{
+	    new Error("", "There was an error during your last Checkout. Please go back and try your purchase again.", "checkout", $_SESSION['viewnow'], $ENV);
+	}
+
+    if($cust["already_processed"] == 4)
+    {
+        ignore_user_abort(false);
+        next_page("license.php?action=confirmation");
+    }
+}
+
+$dv = new dataValidator($_SESSION['viewnow'], PROJECT_ID, $ENV);
+
+if($cust['mode'] == "vehicle")
+{
+    $dv->clean_arrays();
+}
+
+// get the basket totals and set them in the cust array
+$cust = get_totals($app, $cust, $cust_basket);
+//phone/public process
+$site_types = array('INT', 'VINT', 'PH', 'VPH');
+if(in_array($app['site_type'], $site_types))
+{
+    // fed ex
+    if($_POST['fed_ex'])
+    {
+        $cust['fedex_shipping']         = 1;
+        $cust['conv_fee']               = $cust['conv_fee_fedex'];
+        $cust['total']                  = $cust['total_fedex'];
+    }
+    else
+    {
+        $cust['fedex_shipping']         = 0;
+    }
+
+    //billing information
+    $cust['payment_type']               = $_POST['payment_type'];
+
+    //credit card
+    if($cust['payment_type'] == 'CC')
+    {
+        $cust['billing_name']           = strtoupper($_POST['cc_name']);
+        $cust['billing_address_1']      = strtoupper($_POST['cc_address_1']);
+        $cust['billing_address_2']      = strtoupper($_POST['cc_address_2']);
+        $cust['billing_city']           = strtoupper($_POST['cc_city']);
+
+        if($cust['citizen'] == 'Y')
+        {
+            $cust['billing_state']      = strtoupper($_POST['cc_state']);
+            $cust['billing_zip']        = strtoupper($_POST['cc_zip']);
+            $cust['billing_country']    = "USA";
+        }
+        else
+        {
+            $cust['billing_state']      = "NA";
+            $cust['billing_country']    = strtoupper($_POST['cc_country']);
+            $cust['billing_zip']        = strtoupper($_POST['cc_postal']);
+        }
+
+        $cust['card_type']              = $_POST['cc_type'];
+        $cust['card_number']            = $_POST['card_number'];
+        $cust['card_exp']               = $_POST['card_month'] . "/" . substr($_POST['card_year'], 2, 2);
+        $cust['card_exp_month']         = $_POST['card_month'];
+        $cust['card_exp_year']          = substr($_POST['card_year'], 2, 2);
+
+        switch ($cust['card_type'])
+        {
+            case "VS" : $cust['payment_type_text']  = "Visa";           break;
+            case "DS" : $cust['payment_type_text']  = "Discover";       break;
+            case "MC" : $cust['payment_type_text']  = "Mastercard";     break;
+            default   : $cust['payment_type_text']  = "Credit Card";    break;
+        }
+    }
+    //check
+    else if($cust['payment_type'] == 'CHK')
+    {
+        $cust['payment_type_text']  = "Check";
+
+        $cust['billing_name']           = strtoupper($_POST['check_name']);
+        $cust['billing_address_1']      = strtoupper($_POST['check_address_1']);
+        $cust['billing_address_2']      = strtoupper($_POST['check_address_2']);
+        $cust['billing_city']           = strtoupper($_POST['check_city']);
+        $cust['billing_state']          = strtoupper($_POST['check_state']);
+        $cust['billing_zip']            = strtoupper($_POST['check_zip']);
+        $cust['billing_country']        = "USA";
+
+        $cust['billing_phone']          = $_POST['check_phone_1'] . $_POST['check_phone_2'] . $_POST['check_phone_3'];
+        $cust['billing_dl_number']      = $_POST['dl_number'];
+        $cust['billing_dl_state']       = $_POST['dl_state'];
+        $cust['billing_email']          = $_POST['check_email'];
+
+        $cust['check_num']              = $_POST['check_number'];
+        $cust['check_acct_num']         = $_POST['account_number'];
+        $cust['check_routing_num']      = $_POST['routing_number'];
+    }
+    elseif($cust['total'] != 0)
+    {
+        new Error("", "Checkout Error: Unknown Payment Type", "checkout", $_SESSION['viewnow'], $ENV);
+    }
+}
+else
+{
+    // webpos payment type
+    $cust['wpos_payment_type']          = $_POST['payment_type'];
+}
+
+// browser logging ...
+$objSniffer                 = new phpSniff();
+$cust['total_time']         = intval(time() - $cust['start_time']);
+$cust['browser']            = strtoupper(substr($objSniffer->property('long_name'),0,30));
+$cust['browser_version']    = substr($objSniffer->property('version'),0,20);
+$cust['operating_system']   = strtoupper(substr($objSniffer->property('platform') . "-" . $objSniffer->property('os'), 0, 30));
+
+if($_SESSION['viewnow'] == 1)
+{
+    print_array($cust, "cust", $viewnow);
+}
+
+$cust["already_processed"] = 1;
+
+// this is a new transaction so create a new tran_ref_id, tan, and aid if it's not a vehicle txn
+$cust["tran_ref_id"] = db_get_next_tranref("checkout");
+
+$cust['tan']         = get_tan($app['license_year'], $cust);
+
+print_debug("tran_ref_id = {$cust["tran_ref_id"]}");
+print_debug("tan = {$cust['tan']}");
+
+if($cust['mode'] != 'vehicle')
+{
+    $ship_aid        = db_get_next_aid("checkout");
+    print_debug("ship_aid = $ship_aid");
+}
+else
+{
+    // get sequence number
+    $request = xtn_get_sequence_number(PROJECT_ID);
+
+    // send/receive message
+    $obj_socket = new Socket(SEQ_TARGET, SEQ_PORT, PROJECT_ID, $_SESSION['viewnow']);
+    $response = $obj_socket->send($request, $xtn_error);
+
+    log_msg(PROJECT_ID, "sequence_number_request=$request");
+    log_msg(PROJECT_ID, "sequence_number_response=$response");
+
+    if($xtn_error)
+    {
+        new Error("", "Transaction Switch Error - Sequence Number", "checkout", $_SESSION['viewnow'], $ENV, $cust['tran_ref_id']);
+    }
+
+    // parse sequence number response
+    $seq_array = xtn_parse_sequence_number($response);
+
+    if($seq_array['error_code'] != 0)
+    {
+        new Error("", "Sequence Number Error", "checkout", $_SESSION['viewnow'], $ENV, $cust['tran_ref_id']);
+    }
+
+    $cust['sequence_number'] = $seq_array['seq_number'];
+    if(no_value($cust['sequence_number']) || intval($cust['sequence_number']) == 0)
+    {
+        new Error("", "Transaction Switch Error - Sequence Number", "checkout", $_SESSION['viewnow'], $ENV, $cust['tran_ref_id']);
+    }
+
+    $cust['film_number'] = get_film_number($cust, $cust['sequence_number']);
+
+}
+
+
