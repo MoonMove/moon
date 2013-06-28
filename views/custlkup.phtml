@@ -1,0 +1,213 @@
+<?
+    $securepath=substr($_SERVER['DOCUMENT_ROOT'],0,strpos($_SERVER['DOCUMENT_ROOT'],"htdocs",0))."secure";
+    require($securepath."/config.inc");
+    require("config.php");
+?>
+<script language="javascript" src="<?php echo $libs; ?>/identification2.js"></script>
+<script language="javascript" src="<?php echo $libs; ?>/common_functions.js"></script>
+<script language="javascript" src="<?php echo $libs; ?>/string_functions.js"></script>
+<script language="javascript" src="scripts/custlkup.js"></script>
+<script language="javascript" src="scripts/hf.js"></script>
+<form name="frm">
+<?
+  $textmsg = "Input only ONE of the ID options below and then your date of birth and click the &lt;Continue&gt; button.";
+	$showDLSSN = "";
+
+	$deerturkeyCheck = "";
+	if (isset($_GET['app'])) {	
+		if ( $_GET['app'] == "dt") 		
+		{			
+			$deerturkeyCheck = "checkAvailPermits(this.value);";
+			// put in a hidden field to pass along
+			?>
+<input type="hidden" name="application_type" value="deerturkey"/>	
+<input type="hidden" name="ResPermitsAvailable" value="<?=$res_cnt?>"/>
+<input type="hidden" name="ResDateAvailable" value="<?=$res_start_date?>"/>
+<input type="hidden" name="NonResPermitsAvailable" value="<?=$nonres_cnt?>"/>
+<input type="hidden" name="NonResDateAvailable" value="<?=$nonres_start_date?>"/>
+			<?	
+		}	
+		else if( $_GET['app'] == "cp") 	
+		{
+			$textmsg = "Please enter your IDNR number and Date of Birth and hit the <Continue> Button";
+			$showDLSSN = "none";
+			$cust['application_type'] = "commercialpermit";
+		?>
+<input type="hidden" name="application_type" value="commercialpermit"/>	
+			<?		
+		}	
+	}
+	else {
+			?>
+<input type="hidden" name="application_type" value="huntfish"/>	
+			<?
+		}			
+?>
+<input type="hidden" name="canContinue" value="1"/>
+<input type="hidden" name="frm_action" value="license.php?action=process_custlkup"/>
+<input type="hidden" name="site_type" value="<?= $app['site_type'] ?>"/>
+<input type="hidden" name="sysdate" value="<?= date("Ymd") ?>"/>
+<input type="hidden" name="id_used" value=""/>
+  <table width="<?= $page_width ?>" border="0" cellspacing="0" cellpadding="3">
+  <? if($app['site_type'] == "INT" || $app['site_type'] == 'PH') { ?>
+	  <tr><td colspan="2"><div class="darkgreen"><img src="images/header.jpg"></div></td></tr>
+  <? } ?>
+    <tr class="lightbrown">
+      <td colspan="2">An resident is defined as a person who ...<br>
+   
+      (a) Has resided in the state at least 30 days consecutively prior to applying for this license, and whose residence or permanent abode,
+	  at the time of application, is in this state. <br>
+      or<br>
+      (b) Is a member of the United States Armed Forces on active duty.
+    
+      <!--resident means a person who -->
+     </tr>
+	 <tr class="lightbrown">
+	  <td colspan="2" align="left">
+	  	<table border="0" cellpadding="0" cellspacing="3" width="100%">
+			<tr id="resident">
+				<td align="right" width="1%" nowrap>Based on the statement above are you a legal resident?</td>
+				<td align="left">
+				  <input name="resident" type="radio" value="R" onclick="<?=$deerturkeyCheck?> toggle_choices(this); " <?= $cust['resident'] == 'R' ? "checked" : "" ?>>Yes
+				  <input name="resident" type="radio" value="N" onclick="<?=$deerturkeyCheck?> toggle_choices(this); " <?= $cust['resident'] == 'N' ? "checked" : "" ?>>No
+			  </td>
+			</tr>
+			<tr id="citizen" style="display:none;">
+				<td align="right">Are you a citizen of the United States?</td>
+				<td align="left">
+				<input name="citizen" type="radio" value="Y" onclick="toggle_choices(this)" <?= $cust['citizen'] == 'Y' ? "checked" : "" ?>>Yes
+			    <input name="citizen" type="radio" value="N" onclick="toggle_choices(this)" <?= $cust['citizen'] == 'N' ? "checked" : "" ?>>No
+				</td>
+			</tr>
+		</table>
+	  </td>
+    </tr>
+    <tr>
+      <td colspan="2"><hr class="hrule"></td>
+    </tr>
+    <tr id='ids' style="display:none;">
+      <td colspan="2">
+          <table cellpadding="2" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td colspan="2" class="darkgreen"><?=$textmsg?></td>
+            </tr>
+            <tr>
+        		<td width="40%"><div align="right">IDNR Customer Number:</div></td>
+        		<td width="60%" nowrap>
+        		<input name="dnr_1" type="text" class="formfields"  size="3" maxlength="3" value="<?= $cust['dnr_1'] ?>" onkeyup="javascript: autotab(this, event, document.frm.dnr_2);">
+        		-
+        		<input name="dnr_2" type="text" class="formfields"  size="3" maxlength="3" value="<?= $cust['dnr_2'] ?>" onkeyup="javascript: autotab(this, event, document.frm.dnr_3);">
+        		-
+        		<input name="dnr_3" type="text" class="formfields"  size="3" maxlength="3" value="<?= $cust['dnr_3'] ?>">
+        		<input name="dnr" type="hidden" value="<?= $cust['dnr'] ?>">
+        		</td>
+        	</tr>
+        	
+        	
+            <tr id="dl_number" style="display:none;">
+                <td colspan="2">
+                    <table cellpadding="2" cellspacing="0" border="0" width="100%">
+                        <tr>
+                            <td colspan="2" align="center"><span class="regularbold">- OR -</span></td>
+                        </tr>
+                        <tr>
+                    		<td width="40%">
+                              <div align="right">
+                                Driver's License Number /
+                                <br>ID Number:
+                              </div>
+                            </td>
+                    		<td width="60%">
+                              <input name="dl_number" type="text" class="formfields"  size="20" maxlength="20">
+                              <br>
+                              <div class="locationid">Note: Please do not include dashes (Example: AB123123123)</div>
+                            </td>
+                    	</tr>
+                        <tr id="dl_state" style="display:none;">
+                    		<td width="40%">
+                              <div align="right">
+                                Driver's License State /
+                                <br>ID State:
+                              </div>
+                            </td>
+                    		<td width="60%">
+                    		  <select name="dl_state" class="formfields" >
+                    			<option value="" selected>Please Select</option>
+                    			<? state_list(""); ?>
+                    		  </select>
+                    		</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr id="ssn" style="display:none;">
+                <td colspan="2">
+                    <table cellpadding="2" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td colspan="2" align="center"><span class="regularbold">- OR -</span></td>
+                        </tr>
+                    	<tr>
+                    		<td width="40%"><div align="right">Social Security Number:</div></td>
+                    		<td width="60%">
+                    		<input name="ssn_1" type="text" class="formfields"  size="3" maxlength="3" onkeyup="javascript: autotab(this, event, document.frm.ssn_2);">
+                    		-
+                    		<input name="ssn_2" type="text" class="formfields"  size="2" maxlength="2" onkeyup="javascript: autotab(this, event, document.frm.ssn_3);">
+                    		-
+                    		<input name="ssn_3" type="text" class="formfields"  size="4" maxlength="4">
+                    		</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr id="alt_id" style="display:none;">
+                <td colspan="2">
+                    <table cellpadding="2" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td colspan="2" align="center"><span class="regularbold">- OR -</span></td>
+                        </tr>
+                        <tr>
+                    		<td width="40%"><div align="right">Alternate ID:</div></td>
+                    		<td width="60%"><input name="alt_id" type="text" class="formfields"  size="20" maxlength="20"></td>
+                    	  </tr>
+                    	  <tr>
+                    		<td><div align="right">Alternate ID Type :</div></td>
+                    		<td>
+                    		  <select name="alt_id_type" class="formfields" >
+                    			<option value="" selected>Please Select</option>
+                    			<option value='L'>NON-US DRIVERS LICENSE NUMBER</option>
+                    			<option value='V'>VISA</option>
+                    			<option value='P'>PASSPORT</option>
+                    			<option value='G'>GREEN CARD</option>
+                    			<option value='O'>OTHER</option>
+                    		  </select>
+                    		</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+              <td colspan="2" align="center"><span class="regularbold">- AND -</span></td>
+            </tr>
+            <tr>
+            	<td width="40%"><div align="right">Date Of Birth:</div></td>
+            	<td width="60%">
+            	<input name="dob_mm" type="text" class="formfields"  value="<?= $cust['dob_mm'] ?>" size="2" maxlength="2" onkeyup="javascript: autotab(this, event, document.frm.dob_dd);">
+            	/
+            	<input name="dob_dd" type="text" class="formfields"  value="<?= $cust['dob_dd'] ?>" size="2" maxlength="2" onkeyup="javascript: autotab(this, event, document.frm.dob_yyyy);">
+            	/
+            	<input name="dob_yyyy" type="text" class="formfields"  value="<?= $cust['dob_yyyy'] ?>" size="4" maxlength="4">
+            	</td>
+            </tr>
+          </table>
+        </td>
+    </tr>
+	<tr>
+		<td colspan="2" align="center">
+			<input name="continue_btn" type="button" class="button1" onclick="do_submit();" value="Continue">
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<input name="cancel_btn" type="button" class="button1" onclick="do_cancel();" value="Cancel">
+		  </td>
+	  </tr>
+  </table>
+</form>
+<script language="javascript">toggle_choices(document.frm.resident[0]);</script>
