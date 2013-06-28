@@ -1,0 +1,59 @@
+<?
+
+$cust = array();
+
+// test data
+if($viewnow == 1)
+{
+    /*$cust['citizen']        = 'Y';
+    $cust['resident']       = 'R';
+    $cust['dnr_number']     = "999912348";
+    $cust['dnr_1']          = "999";
+    $cust['dnr_2']          = "912";
+    $cust['dnr_3']          = "348";
+    $cust['dob_mm']         = "03";
+    $cust['dob_dd']         = "08";
+    $cust['dob_yyyy']       = "1946";*/
+}
+else
+{
+    $cust['dnr_number']     = "";
+    $cust['dob_mm']         = "MM";
+    $cust['dob_dd']         = "DD";
+    $cust['dob_yyyy']       = "YYYY";
+}
+
+// start time for browser logging
+$cust['start_time'] = time();
+$cust['mode']       = "license";
+
+
+$tmpdata = array();
+$res_cnt = 0;
+$nonres_cnt = 0;
+$res_start_date = "";
+$nonres_start_date = "";
+
+
+
+// adding query to determine if any deer turkey permits avail for non res
+$tmpdata = db_check_avail_permits('R');
+$res_cnt = $tmpdata[0]['numavail'];
+
+$tmpdata = db_check_avail_permits('N');
+$nonres_cnt = $tmpdata[0]['numavail'];
+
+if($res_cnt == 0) {
+  $tmpdata = db_get_start_date('R');
+	$res_start_date = $tmpdata[0]['start_date'];
+}
+
+if($nonres_cnt == 0) {
+	$tmpdata = db_get_start_date('N');
+	$nonres_start_date = $tmpdata[0]['start_date'];
+}
+
+
+//save session
+require('includes/save_session_vars.php');
+?>
