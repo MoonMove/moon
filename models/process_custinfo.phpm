@@ -1,0 +1,169 @@
+<?
+    if(strlen($_POST['dl_number']))
+    {
+        $cust["dl_number"]  = $_POST['dl_number'];
+        $cust["dl_state"]   = $_POST['dl_state'];
+    }
+
+    if(strlen($_POST['alt_id']))
+    {
+        $cust["dl_number"]  = $_POST['alt_id'];
+
+        if($cust['citizen'] == 'N')
+        {
+            $cust["dl_state"]   = "FGN";
+        }
+    }
+
+    if(strlen($_POST['ssn_1']) && strlen($_POST['ssn_2']) && strlen($_POST['ssn_3']))
+    {
+        $cust["ssn"]       = $_POST['ssn_1'] . $_POST['ssn_2'] . $_POST['ssn_3'];
+    }
+
+    if(strlen($_POST['first_name']))
+    {
+        $cust["first_name"]     = format_post_data($_POST['first_name']);
+        $create_name = true;
+    }
+
+    if(strlen($_POST['last_name']))
+    {
+        $cust["last_name"]      = format_post_data($_POST['last_name']);
+        $create_name = true;
+    }
+
+    if(strlen($_POST['middle_name']))
+    {
+        $cust["middle_name"]    = format_post_data($_POST['middle_name']);
+        $create_name = true;
+    }
+
+    if(strlen($_POST['name_suffix']))
+    {
+        $cust['name_suffix'] = format_post_data($_POST['name_suffix']);
+    }
+
+    if(strlen($_POST['business_name']))
+    {
+        $cust["full_name"] = $cust["business_name"];    //format_post_data($_POST['business_name']);   // we are putting business name into full name field in db        
+    }
+
+    if(strlen($_POST['residency_proof']))
+    {
+        $cust["residency_proof"] = format_post_data($_POST['residency_proof']);
+    }
+
+    if($create_name)
+    {
+    		// create full name    	
+        $cust['full_name'] = substr($cust['first_name'],0,17) . " " . substr($cust['middle_name'],0,1) . " " . substr($cust['last_name'],0,17);
+    }
+
+    print_array($cust, "cust", $viewnow);
+
+    $cust["mailing_address_1"]   = format_post_data($_POST['mailing_address_1']);
+    $cust["mailing_address_2"]   = format_post_data($_POST['mailing_address_2']);
+    $cust["mailing_city"]        = format_post_data($_POST['mailing_city']);
+
+    if ($cust["citizen"] == 'N')
+    {
+        $cust["mailing_country"]  = $_POST['mailing_country'];
+        $cust["mailing_state"]    = "NA";
+        $cust["mailing_zip"]      = $_POST['mailing_postal'];
+        $cust["phone"]            = $_POST['phone'];
+        $cust["ssn"]              = "111111111";
+    }
+    else
+    {
+        $cust["mailing_country"]  = "USA";
+        $cust["mailing_state"]    = $_POST['mailing_state'];
+        $cust["mailing_zip"]      = $_POST['mailing_zip'];
+        $cust["phone_1"]          = $_POST['phone_1'];
+        $cust["phone_2"]          = $_POST['phone_2'];
+        $cust["phone_3"]          = $_POST['phone_3'];
+        $cust["phone"]            = $cust["phone_1"] . $cust["phone_2"] . $cust["phone_3"];
+    }
+
+    if(strlen($_POST['county']))
+    {
+        $cust["county"]            = format_post_data($_POST['county']);
+    }
+
+    if($_POST['ship_to'] == 'Y')
+    {
+        $cust['same_shipping']      = 1;
+        $cust["shipping_address_1"] = $cust["mailing_address_1"];
+        $cust["shipping_address_2"] = $cust["mailing_address_2"];
+        $cust["shipping_city"]      = $cust["mailing_city"];
+        $cust["shipping_state"]     = $cust["mailing_state"];
+        $cust["shipping_zip"]       = $cust["mailing_zip"];
+        $cust["shipping_country"]   = $cust['mailing_country'];
+    }
+    else if($_POST['ship_to'] == 'N')
+    {
+        $cust['same_shipping']      = 0;
+        $cust["shipping_address_1"] = format_post_data($_POST["shipping_address_1"]);
+        $cust["shipping_address_2"] = format_post_data($_POST["shipping_address_2"]);
+        $cust["shipping_city"]      = format_post_data($_POST["shipping_city"]);
+
+        if ($cust["citizen"] == 'N' && $_POST['address_type'] == "I")
+        {
+            $cust["shipping_country"]  = $_POST['shipping_country'];
+            $cust["shipping_state"]    = "NA";
+            $cust["shipping_zip"]      = $_POST['shipping_postal'];
+
+        }
+        else
+        {
+            $cust["shipping_country"]  = "USA";
+            $cust["shipping_state"]    = $_POST['shipping_state'];
+            $cust["shipping_zip"]      = $_POST['shipping_zip'];
+        }
+    }
+
+    // billing info
+    $cust['billing_name']      = $cust['full_name'];
+    $cust["billing_address_1"] = $cust["mailing_address_1"];
+    $cust["billing_address_2"] = $cust["mailing_address_2"];
+    $cust["billing_city"]      = $cust["mailing_city"];
+    $cust["billing_state"]     = $cust["mailing_state"];
+    $cust["billing_zip"]       = $cust["mailing_zip"];
+    $cust["billing_country"]   = $cust['mailing_country'];
+    $cust['billing_phone']     = $cust['phone'];
+    $cust['billing_dl_number'] = $cust['dl_number'];
+    $cust['billing_dl_state']  = $cust['dl_state'];
+    $cust['billing_phone_1']   = $cust['phone_1'];
+    $cust['billing_phone_2']   = $cust['phone_2'];
+    $cust['billing_phone_3']   = $cust['phone_3'];
+    $cust['billing_phone']     = $cust['phone'];
+
+    $cust["height_ft"]        = intval($_POST['height_feet']);
+    $cust["height_inch"]      = intval($_POST['height_inch'] );
+    $cust["height"]           = $cust["height_ft"] . pad_left($cust["height_inch"],2);
+    $cust["weight"]           = intval($_POST['weight']);
+    $cust["eye_color"]        = $_POST['eye_color'];
+    $cust['eye_color_text']   = get_eye_color($cust['eye_color']);
+    $cust["hair_color"]       = $_POST['hair_color'];
+    $cust["hair_color_text"]  = get_hair_color($cust['hair_color']);
+    $cust["email"]            = $_POST['email'];
+    $cust["gender"]           = $_POST['gender'];
+
+    $cust['solicitation'] = $_POST['solicitation'];
+
+    if($cust['gender'] == 'M')
+		  $cust['gender_text']  = "Male";
+	  else if($cust['gender'] == 'F')
+		  $cust['gender_text']  = "Female";
+
+    //clear cust basket
+    $cust_basket = array();
+
+    print_array($cust, "cust", $viewnow);
+
+	  if ($cust['application_type'] == "deerturkey")
+		  next_page("license.php?action=deerturkey");
+	  else
+    	next_page("license.php?action=selection");
+    
+    
+?>
